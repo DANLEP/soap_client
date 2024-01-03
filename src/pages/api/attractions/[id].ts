@@ -28,12 +28,10 @@ export default async function handler(
     const { id } = req.query; // Get the dynamic part of the URL
 
     try {
-        console.log(publicRuntimeConfig.INFORMATION_SERVICE);
         // Fetch attraction details
         const attractionRes = await fetch(
             `http://${publicRuntimeConfig.INFORMATION_SERVICE}/api/v1/attraction/${id}`
         );
-        console.log(attractionRes.url)
         if (!attractionRes.ok) {
             throw new Error(`Failed to fetch attraction details, status: ${attractionRes.status}`);
         }

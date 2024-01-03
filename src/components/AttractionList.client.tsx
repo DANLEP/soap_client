@@ -7,16 +7,24 @@ import {BiDislike} from "react-icons/bi";
 
 const AttractionList: React.FC = () => {
     const [attractions, setAttractions] = useState<Attraction[]>([]);
+    const [idUser, setUserId] = useState<number>();
     const fetchAttractions = async () => {
-        const response = await fetch('/api/attractions?id_user=2');
+        const response = await fetch(`/api/attractions?id_user=${idUser}`);
         const data = await response.json();
         setAttractions(data);
     };
 
     // Call fetchAttractions when the component mounts
     useEffect(() => {
-        fetchAttractions();
+        if (typeof window !== 'undefined' && window.localStorage) {
+            let userId = localStorage.getItem('id_user');
+            if (userId) setUserId(Number.parseInt(userId));
+        }
     }, []);
+
+    useEffect(() => {
+        if (idUser) fetchAttractions();
+    }, [idUser]);
 
     if (!attractions || attractions.length === 0) {
         return (<div className="flex w-min mx-auto">
@@ -57,17 +65,22 @@ const AttractionList: React.FC = () => {
 
     return (
         <div className="flex w-min mx-auto">
-            <button onClick={() => handleVote(currentAttraction.id_attraction, 2, 'like')}
-                    className="flex items-center justify-center w-20 h-20 rounded-full bg-blue-500 shadow-lg
+            {idUser ?
+                <>
+                    <button onClick={() => handleVote(currentAttraction.id_attraction, idUser, 'like')}
+                            className="flex items-center justify-center w-20 h-20 rounded-full bg-blue-500 shadow-lg
               mr-24 focus:outline-none my-auto text-white">
-                <FaRegHeart size={44}/>
-            </button>
-            <AttractionCard attraction={currentAttraction}/>
-            <button onClick={() => handleVote(currentAttraction.id_attraction, 2, 'dislike')}
-                    className="flex items-center justify-center w-20 h-20 rounded-full bg-red-500 shadow-lg
+                        <FaRegHeart size={44}/>
+                    </button>
+                    <AttractionCard attraction={currentAttraction}/>
+                    <button onClick={() => handleVote(currentAttraction.id_attraction, idUser, 'dislike')}
+                            className="flex items-center justify-center w-20 h-20 rounded-full bg-red-500 shadow-lg
               ml-24 focus:outline-none my-auto text-white">
-                <BiDislike size={44}/>
-            </button>
+                        <BiDislike size={44}/>
+                    </button>
+                </>
+                : <></>
+            }
         </div>
     );
 };

@@ -40,6 +40,9 @@ export type Attraction = {
 
 const AttractionInfo: React.FC<{ attraction: Attraction }> = ({ attraction }) => {
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+    const [idUser, setUserId] = useState<number>();
+    const [userRole, setUserRole] = useState<string>();
+
     useEffect(() => {
         // Set up an interval to change the image every 5 seconds
         const intervalId = setInterval(() => {
@@ -49,6 +52,39 @@ const AttractionInfo: React.FC<{ attraction: Attraction }> = ({ attraction }) =>
         // Clean up the interval on unmount
         return () => clearInterval(intervalId);
     }, [attraction.photos.length]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            let userId = localStorage.getItem('id_user');
+            let userRole = localStorage.getItem('user_role');
+            if (userId) setUserId(Number.parseInt(userId));
+            if (userRole) setUserRole(userRole);
+        }
+    }, []);
+
+    const handleDelete = async (id_review: number) => {
+        try {
+            const response = await fetch(`/api/review/${id_review}`, {
+                method: 'PUT', // Предполагаем, что API использует метод PUT для обновления
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    'status': 'hidden'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Error updating review');
+            }
+            else {
+                attraction.reviews = attraction.reviews.filter(review => review.id_review !== id_review)
+            }
+        } catch (error) {
+            console.error('Failed to delete review:', error);
+        }
+    };
+
 
     const backgroundImageUrl = attraction.photos[currentPhotoIndex]?.url;
     return (
@@ -90,21 +126,32 @@ const AttractionInfo: React.FC<{ attraction: Attraction }> = ({ attraction }) =>
                 </div>
             </div>
 
-            <div className="my-8">
-                <h2 className="text-2xl font-bold mb-4">Reviews</h2>
-                {attraction.reviews.map((review) => (
-                    <div key={review.id_review} className="border-b border-gray-200 mb-4 pb-4">
-                        <div className="flex items-center">
-                            <div className="mr-4">
-                                <strong>{review.user.first_name} {review.user.last_name}</strong>
-                                <p className="text-sm">{new Date(review.created_at).toLocaleDateString()}</p>
+            {attraction.reviews.length > 0?
+                <div className="my-8">
+                    <h2 className="text-2xl font-bold mb-4">Reviews</h2>
+                    {attraction.reviews.map((review) => (
+                        <div key={review.id_review} className="border-b border-gray-200 mb-4 pb-4">
+                            <div className="flex items-center">
+                                <div className="mr-4">
+                                    <strong>{review.user.first_name} {review.user.last_name}</strong>
+                                    <p className="text-sm">{new Date(review.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <div>Rating: {review.rating}</div>
                             </div>
-                            <div>Rating: {review.rating}</div>
+                            <p>{review.review_text}</p>
+                            {userRole === 'admin' && (
+                                <button
+                                    onClick={() => handleDelete(review.id_review)}
+                                    className="text-red-500 hover:text-red-700"
+                                >
+                                    Delete
+                                </button>
+                            )}
                         </div>
-                        <p>{review.review_text}</p>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+                : <></>
+            }
         </div>
     );
 };
